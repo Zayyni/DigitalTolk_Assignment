@@ -20,7 +20,6 @@ A comprehensive Spring Boot application for managing translations across multipl
 - **Database**: MySQL 8.0 (H2 for testing)
 - **Security**: Spring Security with JWT
 - **Documentation**: SpringDoc OpenAPI 3
-- **Testing**: JUnit 5, Mockito
 - **Caching**: Spring Cache
 - **Build Tool**: Maven
 - **Containerization**: Docker & Docker Compose
