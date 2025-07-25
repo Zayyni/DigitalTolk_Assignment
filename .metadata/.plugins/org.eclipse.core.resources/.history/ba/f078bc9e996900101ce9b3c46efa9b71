@@ -1,0 +1,36 @@
+package com.digitaltolk.translation.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+
+
+@Entity
+@Table(name = "translations", indexes = {
+	    @Index(name = "idx_translation_key", columnList = "translationKey"),
+	    @Index(name = "idx_locale", columnList = "locale"),
+	    @Index(name = "idx_key_locale", columnList = "translationKey, locale", unique = true),
+	    @Index(name = "idx_updated_at", columnList = "updatedAt")
+	})
+public class Translation {
+	@Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String locale;    
+    private String tag;    
+    private String key;
+    private String value;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
+}

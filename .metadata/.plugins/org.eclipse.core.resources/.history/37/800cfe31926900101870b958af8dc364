@@ -1,0 +1,5 @@
+package com.digitaltolk.translation.entity;
+
+public class Translation {
+
+}

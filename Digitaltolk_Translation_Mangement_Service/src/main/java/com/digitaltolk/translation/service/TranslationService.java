@@ -1,0 +1,194 @@
+package com.digitaltolk.translation.service;
+
+
+import com.digitaltolk.translation.dto.TranslationDto;
+import com.digitaltolk.translation.entity.Tag;
+import com.digitaltolk.translation.entity.Translation;
+import com.digitaltolk.translation.repo.TagRepository;
+import com.digitaltolk.translation.repo.TranslationRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+@Transactional
+public class TranslationService {
+	
+	@Autowired
+    private TranslationRepository translationRepository;
+    
+    @Autowired
+    private TagRepository tagRepository;
+    
+    @CacheEvict(value = {"translations", "translationExport"}, allEntries = true)
+    public TranslationDto createTranslation(TranslationDto dto) {
+        if (translationRepository.existsByTranslationKeyAndLocale(dto.getTranslationKey(), dto.getLocale())) {
+            throw new RuntimeException("Translation already exists for key '" + dto.getTranslationKey() + "' and locale '" + dto.getLocale() + "'");
+        }
+        
+        Translation translation = mapToEntity(dto);
+        
+        if (dto.getTags() != null && !dto.getTags().isEmpty()) {
+            Set<Tag> tags = getOrCreateTags(dto.getTags());
+            translation.setTags(tags);
+        }
+        
+        Translation saved = translationRepository.save(translation);
+        return mapToDto(saved);
+    }
+    
+    @CacheEvict(value = {"translations", "translationExport"}, allEntries = true)
+    public TranslationDto updateTranslation(Long id, TranslationDto dto) {
+        Translation existing = translationRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Translation not found with id: " + id));
+        
+        // Check if trying to update key/locale to existing combination
+        if (!existing.getTranslationKey().equals(dto.getTranslationKey()) || 
+            !existing.getLocale().equals(dto.getLocale())) {
+            if (translationRepository.existsByTranslationKeyAndLocale(dto.getTranslationKey(), dto.getLocale())) {
+                throw new RuntimeException("Translation already exists for key '" + dto.getTranslationKey() + "' and locale '" + dto.getLocale() + "'");
+            }
+        }
+        
+        existing.setTranslationKey(dto.getTranslationKey());
+        existing.setLocale(dto.getLocale());
+        existing.setContent(dto.getContent());
+        
+        // Update tags
+        existing.getTags().clear();
+        if (dto.getTags() != null && !dto.getTags().isEmpty()) {
+            Set<Tag> tags = getOrCreateTags(dto.getTags());
+            existing.setTags(tags);
+        }
+        
+        Translation updated = translationRepository.save(existing);
+        return mapToDto(updated);
+    }
+    
+    @Transactional(readOnly = true)
+    @Cacheable(value = "translations", key = "#id")
+    public TranslationDto getTranslation(Long id) {
+        Translation translation = translationRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Translation not found with id: " + id));
+        return mapToDto(translation);
+    }
+    
+    @CacheEvict(value = {"translations", "translationExport"}, allEntries = true)
+    public void deleteTranslation(Long id) {
+        if (!translationRepository.existsById(id)) {
+            throw new RuntimeException("Translation not found with id: " + id);
+        }
+        translationRepository.deleteById(id);
+    }
+    
+    @Transactional(readOnly = true)
+    public Page<TranslationDto> searchTranslations(String key, String locale, String content, 
+                                                  List<String> tags, int page, int size, String sortBy, String sortDir) {
+        Sort sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy);
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        Page<Translation> results;
+        
+        if (tags != null && !tags.isEmpty()) {
+            results = translationRepository.findByTagNames(tags, pageable);
+        } else {
+            results = translationRepository.searchTranslations(key, locale, content, pageable);
+        }
+        
+        return results.map(this::mapToDto);
+    }
+    
+    @Transactional(readOnly = true)
+    @Cacheable(value = "translationExport", key = "#locale + '_' + #lastUpdate")
+    public Map<String, String> exportTranslations(String locale, LocalDateTime lastUpdate) {
+        List<Translation> translations;
+        
+        if (lastUpdate != null) {
+            translations = translationRepository.findByLocaleAndUpdatedAfter(locale, lastUpdate);
+        } else {
+            translations = translationRepository.findByLocale(locale);
+        }
+        
+        return translations.stream()
+            .collect(Collectors.toMap(
+                Translation::getTranslationKey,
+                Translation::getContent,
+                (existing, replacement) -> replacement // Handle duplicates
+            ));
+    }
+    
+    @Transactional(readOnly = true)
+    public List<String> getAllLocales() {
+        return translationRepository.findAllLocales();
+    }
+    
+    // Bulk operations for performance testing
+    @CacheEvict(value = {"translations", "translationExport"}, allEntries = true)
+    public void bulkCreateTranslations(List<TranslationDto> translations) {
+        List<Translation> entities = translations.stream()
+            .map(this::mapToEntity)
+            .collect(Collectors.toList());
+        
+        translationRepository.saveAll(entities);
+    }
+    
+    private Set<Tag> getOrCreateTags(Set<String> tagNames) {
+        Set<Tag> existingTags = tagRepository.findByNameIn(tagNames);
+        Set<String> existingTagNames = existingTags.stream()
+            .map(Tag::getName)
+            .collect(Collectors.toSet());
+        
+        Set<Tag> newTags = tagNames.stream()
+            .filter(name -> !existingTagNames.contains(name))
+            .map(Tag::new)
+            .collect(Collectors.toSet());
+        
+        if (!newTags.isEmpty()) {
+            tagRepository.saveAll(newTags);
+            existingTags.addAll(newTags);
+        }
+        
+        return existingTags;
+    }
+    
+    private Translation mapToEntity(TranslationDto dto) {
+        Translation translation = new Translation();
+        translation.setTranslationKey(dto.getTranslationKey());
+        translation.setLocale(dto.getLocale());
+        translation.setContent(dto.getContent());
+        return translation;
+    }
+    
+    private TranslationDto mapToDto(Translation translation) {
+        TranslationDto dto = new TranslationDto();
+        dto.setId(translation.getId());
+        dto.setTranslationKey(translation.getTranslationKey());
+        dto.setLocale(translation.getLocale());
+        dto.setContent(translation.getContent());
+        dto.setCreatedAt(translation.getCreatedAt());
+        dto.setUpdatedAt(translation.getUpdatedAt());
+        
+        if (!translation.getTags().isEmpty()) {
+            Set<String> tagNames = translation.getTags().stream()
+                .map(Tag::getName)
+                .collect(Collectors.toSet());
+            dto.setTags(tagNames);
+        }
+        
+        return dto;
+
+}
+}
+
+

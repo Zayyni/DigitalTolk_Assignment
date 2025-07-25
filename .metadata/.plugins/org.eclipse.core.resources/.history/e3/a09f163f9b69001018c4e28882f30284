@@ -1,0 +1,14 @@
+package com.digitaltolk.translation.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDateTime;
+import java.util.Set;
+public class TranslationDTO {
+	private String locale;
+    private String tag;
+    private String key;
+    private String value;
+
+}

@@ -1,0 +1,15 @@
+package com.digitaltolk.translation.repo;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.digitaltolk.translation.entity.Translation;
+
+@Repository
+public interface TranslationRepo extends JpaRepository<Translation, Long>{
+	List<Translation> findByTagOrKeyOrValueContaining(String tag, String key, String value);
+    List<Translation> findByLocaleAndTag(String locale, String tag);
+
+}

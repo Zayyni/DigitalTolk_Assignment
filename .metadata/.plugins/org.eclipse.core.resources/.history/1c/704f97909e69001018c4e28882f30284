@@ -1,0 +1,207 @@
+package com.digitaltolk.translation.service;
+
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
+import com.digitaltolk.translation.dto.TranslationDto;
+import com.digitaltolk.translation.entity.Tag;
+import com.digitaltolk.translation.entity.Translation;
+import com.digitaltolk.translation.repo.TagRepository;
+import com.digitaltolk.translation.repo.TranslationRepository;
+
+@ExtendWith(MockitoExtension.class)
+public class TranslationServiceTest {
+	
+	@Mock
+    private TranslationRepository translationRepository;
+    
+    @Mock
+    private TagRepository tagRepository;
+    
+    @InjectMocks
+    private TranslationService translationService;
+    
+    private TranslationDto testDto;
+    private Translation testTranslation;
+    private Tag testTag;
+    
+    @BeforeEach
+    void setUp() {
+        testDto = new TranslationDto();
+        testDto.setTranslationKey("test.key");
+        testDto.setLocale("en");
+        testDto.setContent("Test content");
+        testDto.setTags(Set.of("mobile"));
+        
+        testTranslation = new Translation();
+        testTranslation.setId(1L);
+        testTranslation.setTranslationKey("test.key");
+        testTranslation.setLocale("en");
+        testTranslation.setContent("Test content");
+        testTranslation.setCreatedAt(LocalDateTime.now());
+        testTranslation.setUpdatedAt(LocalDateTime.now());
+        
+        testTag = new Tag("mobile", "Mobile context");
+        testTag.setId(1L);
+        testTranslation.setTags(Set.of(testTag));
+    }
+    
+    @Test
+    void createTranslation_Success() {
+        // Arrange
+        when(translationRepository.existsByTranslationKeyAndLocale("test.key", "en")).thenReturn(false);
+        when(tagRepository.findByNameIn(Set.of("mobile"))).thenReturn(Set.of(testTag));
+        when(translationRepository.save(any(Translation.class))).thenReturn(testTranslation);
+        
+        // Act
+        TranslationDto result = translationService.createTranslation(testDto);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals("test.key", result.getTranslationKey());
+        assertEquals("en", result.getLocale());
+        assertEquals("Test content", result.getContent());
+        assertTrue(result.getTags().contains("mobile"));
+        
+        verify(translationRepository).existsByTranslationKeyAndLocale("test.key", "en");
+        verify(translationRepository).save(any(Translation.class));
+    }
+    
+    @Test
+    void createTranslation_AlreadyExists_ThrowsException() {
+        // Arrange
+        when(translationRepository.existsByTranslationKeyAndLocale("test.key", "en")).thenReturn(true);
+        
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+            () -> translationService.createTranslation(testDto));
+        
+        assertTrue(exception.getMessage().contains("Translation already exists"));
+        verify(translationRepository, never()).save(any());
+    }
+    
+    @Test
+    void updateTranslation_Success() {
+        // Arrange
+        TranslationDto updateDto = new TranslationDto();
+        updateDto.setTranslationKey("test.key.updated");
+        updateDto.setLocale("en");
+        updateDto.setContent("Updated content");
+        updateDto.setTags(Set.of("desktop"));
+        
+        Tag desktopTag = new Tag("desktop", "Desktop context");
+        
+        when(translationRepository.findById(1L)).thenReturn(Optional.of(testTranslation));
+        when(translationRepository.existsByTranslationKeyAndLocale("test.key.updated", "en")).thenReturn(false);
+        when(tagRepository.findByNameIn(Set.of("desktop"))).thenReturn(Set.of(desktopTag));
+        when(translationRepository.save(any(Translation.class))).thenReturn(testTranslation);
+        
+        // Act
+        TranslationDto result = translationService.updateTranslation(1L, updateDto);
+        
+        // Assert
+        assertNotNull(result);
+        verify(translationRepository).findById(1L);
+        verify(translationRepository).save(any(Translation.class));
+    }
+    
+    @Test
+    void getTranslation_Success() {
+        // Arrange
+        when(translationRepository.findById(1L)).thenReturn(Optional.of(testTranslation));
+        
+        // Act
+        TranslationDto result = translationService.getTranslation(1L);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals("test.key", result.getTranslationKey());
+        verify(translationRepository).findById(1L);
+    }
+    
+    @Test
+    void getTranslation_NotFound_ThrowsException() {
+        // Arrange
+        when(translationRepository.findById(1L)).thenReturn(Optional.empty());
+        
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+            () -> translationService.getTranslation(1L));
+        
+        assertTrue(exception.getMessage().contains("Translation not found"));
+    }
+    
+    @Test
+    void deleteTranslation_Success() {
+        // Arrange
+        when(translationRepository.existsById(1L)).thenReturn(true);
+        
+        // Act
+        translationService.deleteTranslation(1L);
+        
+        // Assert
+        verify(translationRepository).existsById(1L);
+        verify(translationRepository).deleteById(1L);
+    }
+    
+    @Test
+    void searchTranslations_Success() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Translation> mockPage = new PageImpl<>(Collections.singletonList(testTranslation));
+        
+        when(translationRepository.searchTranslations("test", "en", "content", pageable))
+            .thenReturn(mockPage);
+        
+        // Act
+        Page<TranslationDto> result = translationService.searchTranslations(
+            "test", "en", "content", null, 0, 10, "updatedAt", "desc");
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals("test.key", result.getContent().get(0).getTranslationKey());
+    }
+    
+    @Test
+    void exportTranslations_Success() {
+        // Arrange
+        List<Translation> translations = Arrays.asList(testTranslation);
+        when(translationRepository.findByLocale("en")).thenReturn(translations);
+        
+        // Act
+        Map<String, String> result = translationService.exportTranslations("en", null);
+        
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Test content", result.get("test.key"));
+        verify(translationRepository).findByLocale("en");
+    }
+
+}

@@ -1,0 +1,57 @@
+package com.digitaltolk.translation.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+import java.time.LocalDateTime;
+import java.util.Set;
+public class TranslationDTO {
+private Long id;
+    
+    @NotBlank(message = "Translation key is required")
+    @Size(max = 255, message = "Translation key must not exceed 255 characters")
+    private String translationKey;
+    
+    @NotBlank(message = "Locale is required")
+    @Size(max = 10, message = "Locale must not exceed 10 characters")
+    private String locale;
+    
+    @NotBlank(message = "Content is required")
+    private String content;
+    
+    private Set<String> tags;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    
+    // Constructors
+    public TranslationDto() {}
+    
+    public TranslationDto(String translationKey, String locale, String content) {
+        this.translationKey = translationKey;
+        this.locale = locale;
+        this.content = content;
+    }
+    
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
+    public String getTranslationKey() { return translationKey; }
+    public void setTranslationKey(String translationKey) { this.translationKey = translationKey; }
+    
+    public String getLocale() { return locale; }
+    public void setLocale(String locale) { this.locale = locale; }
+    
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+    
+    public Set<String> getTags() { return tags; }
+    public void setTags(Set<String> tags) { this.tags = tags; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+}

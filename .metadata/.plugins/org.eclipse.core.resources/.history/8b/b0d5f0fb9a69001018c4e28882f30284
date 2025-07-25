@@ -1,0 +1,9 @@
+package com.digitaltolk.translation.repo;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.digitaltolk.translation.entity.Tag;
+
+public interface TagRepository extends JpaRepository<Tag, Long>{
+
+}

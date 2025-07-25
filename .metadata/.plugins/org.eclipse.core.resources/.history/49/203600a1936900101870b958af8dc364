@@ -1,0 +1,13 @@
+package com.digitaltolk.translation.service;
+
+import java.util.List;
+import java.util.Map;
+
+import com.digitaltolk.translation.entity.Translation;
+
+public interface TranslationService {
+	Translation createOrUpdate(TranslationDTO dto);
+    List<Translation> search(String tag, String key, String value);
+    Map<String, Map<String, String>> exportAllTranslations();
+
+}

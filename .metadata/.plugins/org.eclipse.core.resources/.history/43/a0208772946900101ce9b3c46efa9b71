@@ -1,0 +1,7 @@
+package com.digitaltolk.translation.controller;
+
+@RestController
+@RequestMapping("/api/translation")
+public class TranslationController {
+
+}

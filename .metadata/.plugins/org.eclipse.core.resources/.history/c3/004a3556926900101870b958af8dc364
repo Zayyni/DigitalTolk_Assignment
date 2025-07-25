@@ -1,0 +1,24 @@
+package com.digitaltolk.translation.entity;
+
+import java.time.LocalDateTime;
+
+import org.springframework.data.annotation.LastModifiedDate;
+
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+
+public class Translation {
+	@Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String locale;     // e.g., "en", "fr"
+    private String tag;        // e.g., "mobile", "desktop"
+    private String key;
+    private String value;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
+}

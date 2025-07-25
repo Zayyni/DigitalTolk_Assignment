@@ -1,0 +1,5 @@
+package com.digitaltolk.translation.dto;
+
+public class TranslationDTO {
+
+}

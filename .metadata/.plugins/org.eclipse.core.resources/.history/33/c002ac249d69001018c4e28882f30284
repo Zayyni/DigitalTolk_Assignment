@@ -1,0 +1,49 @@
+package com.digitaltolk.translation.controller;
+
+import com.digitaltolk.translation.dto.TranslationDto;
+import com.digitaltolk.translation.service.TranslationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/translations")
+@Tag(name = "Translation Management", description = "APIs for managing translations")
+public class TranslationController {
+	
+	@Autowired
+    private TranslationService service;
+
+    @PostMapping
+    public ResponseEntity<?> create(@RequestBody TranslationDto dto) {
+        return ResponseEntity.ok(service.createOrUpdate(dto));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> search(
+        @RequestParam String tag,
+        @RequestParam String key,
+        @RequestParam String value) {
+        return ResponseEntity.ok(service.search(tag, key, value));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<?> export(
+        @RequestParam String locale,
+        @RequestParam String tag) {
+        return ResponseEntity.ok(service.export(locale, tag));
+    }
+
+}

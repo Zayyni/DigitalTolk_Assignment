@@ -1,0 +1,12 @@
+package com.digitaltolk.translation.dto;
+
+import lombok.Data;
+
+@Data
+public class TranslationDTO {
+	private String locale;
+    private String tag;
+    private String key;
+    private String value;
+
+}

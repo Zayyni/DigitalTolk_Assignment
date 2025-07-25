@@ -1,0 +1,62 @@
+package com.digitaltolk.translation.service;
+import com.digitaltolk.translation.dto.AuthDto;
+import com.digitaltolk.translation.entity.User;
+import com.digitaltolk.translation.repo.UserRepository;
+import com.digitaltolk.translation.security.JwtTokenProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
+public class AuthService {
+	@Autowired
+    private AuthenticationManager authenticationManager;
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private JwtTokenProvider tokenProvider;
+    
+    public AuthDto.AuthResponse login(AuthDto.LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
+        
+        User user = (User) authentication.getPrincipal();
+        String token = tokenProvider.generateToken(authentication);
+        
+        return new AuthDto.AuthResponse(token, user.getEmail(), user.getFullName());
+    }
+    
+    public AuthDto.AuthResponse register(AuthDto.RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists: " + request.getEmail());
+        }
+        
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
+        
+        User savedUser = userRepository.save(user);
+        
+        // Create authentication for token generation
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+            savedUser, null, savedUser.getAuthorities()
+        );
+        
+        String token = tokenProvider.generateToken(authentication);
+        
+        return new AuthDto.AuthResponse(token, savedUser.getEmail(), savedUser.getFullName());
+    }
+
+}

@@ -1,0 +1,38 @@
+package com.digitaltolk.translation.service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.digitaltolk.translation.dto.TranslationDTO;
+import com.digitaltolk.translation.entity.Translation;
+import com.digitaltolk.translation.repo.TranslationRepo;
+
+@Service
+public class TranslationService {
+	
+	@Autowired
+    private TranslationRepo repo;
+
+    public Translation createOrUpdate(TranslationDTO dto) {
+        Translation translation = new Translation();
+        translation.setLocale(dto.getLocale());
+        translation.setTag(dto.getTag());
+        translation.setKey(dto.getKey());
+        translation.setValue(dto.getValue());
+        return repo.save(translation);
+    }
+
+    public List<Translation> search(String tag, String key, String value) {
+        return repo.findByTagOrKeyOrValueContaining(tag, key, value);
+    }
+
+    public Map<String, String> export(String locale, String tag) {
+        return repo.findByLocaleAndTag(locale, tag).stream()
+                .collect(Collectors.toMap(Translation::getKey, Translation::getValue));
+    }
+
+}

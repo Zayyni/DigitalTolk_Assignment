@@ -1,0 +1,18 @@
+package com.digitaltolk.translation.entity;
+
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "tags", indexes = {
+    @Index(name = "idx_tag_name", columnList = "name", unique = true)
+})
+public class Tag {
+
+}

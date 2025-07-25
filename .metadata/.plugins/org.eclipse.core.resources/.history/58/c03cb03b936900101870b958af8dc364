@@ -1,0 +1,5 @@
+package com.digitaltolk.translation.service;
+
+public class TranslationService {
+
+}
