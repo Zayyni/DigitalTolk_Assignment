@@ -36,7 +36,7 @@ A comprehensive Spring Boot application for managing translations across multipl
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Zayyni/DigitalTolk_Assignment.git
    cd translation-service
    ```
 
@@ -156,22 +156,6 @@ curl -X POST http://localhost:8080/api/admin/seed/10000 \
   -H "Authorization: Bearer ADMIN_JWT_TOKEN"
 ```
 
-## Testing
-
-### Run All Tests
-```bash
-mvn test
-```
-
-### Test Coverage Report
-```bash
-mvn jacoco:report
-# View report at target/site/jacoco/index.html
-```
-
-### Performance Testing
-The application includes a data seeder that can create 100K+ records across multiple locales for performance testing.
-
 ## Security
 
 ### JWT Authentication
@@ -258,7 +242,7 @@ The application is designed to support CDN integration for the JSON export endpo
 
 ### Git Workflow
 ```bash
-git clone <repository-url>
+git clone https://github.com/Zayyni/DigitalTolk_Assignment.git
 git checkout -b feature/your-feature
 # Make changes
 git commit -m "Add your feature"
